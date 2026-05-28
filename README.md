@@ -1,129 +1,124 @@
-# UVG-CWI-DQPC: Dual-Quality Point Cloud Dataset — Grand Challenge Submissions
+\# XJBG — Submission by Team Rewind
 
-This repository hosts submissions for the **UVG-CWI-DQPC Grand Challenge**, which focuses on improving consumer-grade point clouds to match high-end capture quality.
 
-**Dataset website:** [https://ultravideo.fi/UVG-CWI-DQPC/index.html](https://ultravideo.fi/UVG-CWI-DQPC/index.html)
 
-## Challenge Overview
+\## Team Name
 
-The [UVG-CWI-DQPC dataset](https://ultravideo.fi/UVG-CWI-DQPC/index.html) contains 12 volumetric video sequences captured simultaneously with both a **high-end multi-camera capture system** and **consumer-grade Intel RealSense depth cameras**. The goal of this challenge is to develop algorithms that enhance consumer-grade point clouds toward the quality of the high-end captures.
+Rewind
 
-Participants may choose one of two processing tracks:
 
-| Track | Input | Description |
-|-------|-------|-------------|
-| **Full Pipeline** | Intel RealSense `.bag` files (RGBD data) | Process raw depth sensor data end-to-end to produce enhanced PLY point clouds |
-| **Enhancement Only** | Consumer-grade `.ply` files | Improve the already-extracted consumer-grade PLY point clouds |
 
-### Evaluation
+\## Team Members
 
-Submitted point clouds are evaluated by comparing each output `.ply` frame against the corresponding **High-Quality "ground truth"** `.ply` from the high-end capture system. The following metrics are computed:
 
-- **Chamfer Distance** — Symmetric average nearest-neighbor distance between point clouds
-- **Accuracy** — Average distance from each point in the output to its nearest neighbor in the ground truth
-- **Completeness** — Average distance from each point in the ground truth to its nearest neighbor in the output
-- **Runtime** — Total processing time for all frames (in seconds)
 
-**NOTE** Metrics are subject to change; likely some additional metrics are added.
+| Name | Affiliation |
 
-### Dataset Sequences
+|------|-------------|
 
-The dataset includes the following sequences:
+| Dayou Zhang | Capital Normal University |
 
-| Sequence | Frames | Description |
-|----------|--------|-------------|
-| BlueSpeech | 169 | Person delivering a speech with hand gestures |
-| BlueVolley | 171 | Person playing with a volleyball |
-| BouncingBlue | 157 | Person bouncing on a gym ball |
-| FitFluencer | 201 | Person stretching sideways |
-| GoodVision | 168 | Person conducting an eye exam |
-| Mannequin | 188 | Static mannequin wearing HMD and T-shirt |
-| OrangeKettlebell | 170 | Person performing kettlebell swings |
-| PinkNoir | 201 | Person posing for the camera |
-| TicTacToe | 165 | Two persons playing Tic Tac Toe |
-| TrumanShow | 171 | Person greeting cameras with gestures |
-| VictoryHeart | 197 | Person making heart shape with hands |
-| VirtualLife | 196 | Person in VR gameplay with HMD |
+| Yi Song | Capital Normal University |
 
-## How to Submit
+| Ziyue Wan | Capital Normal University |
 
-### 1. Fork & Clone
+| Zeqiang Wei | Capital Normal University |
 
-Fork this repository and clone it locally.
 
-### 2. Create Your Submission Directory
 
-Create a directory under `submissions/` using your team or algorithm name:
+\## Algorithm Name
+
+XJBG
+
+
+
+\## Algorithm Description
+
+This Python script is designed to extract timestamp-filtered synchronized RGB frames from 8 RealSense bag files and generate SAM3 foreground masks for each image, with a structured output layout that organizes frames and masks into numbered directories alongside critical metadata files (cameras.json and alignment\_metadata.json). It first reads start and end timestamps from a sequence JSON file to filter frames, verifies consistent frame counts across all cameras, and aligns frames by list index rather than frame number—ensuring synchronization for multi-camera setups. The script also leverages the pyrealsense2 library to extract camera serial numbers, color intrinsics (fx, fy, cx, cy, resolution), and extrinsics (c2w/w2c transforms) from bag files, which are essential for downstream 3D reconstruction tasks.
+
+
+
+An optional Stage 3 of the workflow enables masked foreground point-cloud reconstruction using Depth Anything 3 (DA3), integrating RealSense depth data to refine DA3’s depth predictions via robust RANSAC-based scale/shift alignment and multi-view reprojection consistency filtering. This stage includes advanced features like SIFT feature detection and matching for correspondence-based depth refinement, epipolar error checking, triangulation of 3D points from matched features, and inverse distance weighting (IDW) for residual correction to improve depth accuracy. The reconstructed point clouds are downsampled (voxel filtering) and outlier-removed, then saved in formats compatible with Open3D, making the pipeline end-to-end for multi-camera RGB-D data processing and 3D reconstruction.
+
+
+
+\## Processing Track
+
+\*\*Full Pipeline\*\* (processing from raw `.bag` files)
+
+
+
+\## How to Run
+
+
+
+\### 1. Environment Setup
+
+
+
+A conda environment file is provided. Create and activate the environment with:
+
+
+
+```bash
+
+conda env create -f environment.yml
+
+conda activate <env\_name>
 
 ```
-submissions/
-└── your_team_or_algorithm_name/
-    ├── README.md           # Required: algorithm description (see below)
-    ├── src/                # Required: source code to reproduce results
-    │   └── ...
-    └── requirements.txt    # Recommended: dependencies
+
+
+
+The following pre-trained models must be available before running:
+
+\- `sam3\_modelscope` — SAM3 segmentation model
+
+\- `DA3NESTED-GIANT-LARGE-1.1` — Depth Anything 3 model, expected at `/workspace/Depth-Anything-3/DA3NESTED-GIANT-LARGE-1.1`
+
+
+
+\### 2. Run the Full Pipeline
+
+
+
+```bash
+
+python extract\_synced\_frames\_and\_maskes3.py \\
+
+&#x20; --bag-dir /dataset/BlueSpeech/consumer-grade\_capture\_system/camera\_output \\
+
+&#x20; --camera-config /dataset/BlueSpeech/consumer-grade\_capture\_system/camera\_output/BlueSpeech\_camera\_config.json \\
+
+&#x20; --sequence-json /workspace/dataset\_sequence.json \\
+
+&#x20; --seq-name BlueSpeech \\
+
+&#x20; --output /workspace/BlueSpeech/frames \\
+
+&#x20; --sam3-model sam3\_modelscope \\
+
+&#x20; --device cuda \\
+
+&#x20; --da3-model-path /workspace/Depth-Anything-3/DA3NESTED-GIANT-LARGE-1.1 \\
+
+&#x20; --da3-device cuda \\
+
+&#x20; --stage3-reconstruct
+
 ```
 
-> **Note:** Do not include output PLY files in your submission — they are too large for version control. The organizers will run your source code to generate and evaluate the results.
 
-### 3. Write Your Submission README
 
-Your `submissions/your_team_or_algorithm_name/README.md` **must** include:
+\## Hardware / Environment
 
-- **Team Name**
-- **Team Members** — Full names and affiliations
-- **Algorithm Name** — Short identifier for your method
-- **Algorithm Description** — Summary of your approach
-- **Processing Track** — Either `Full Pipeline` (from `.bag` files) or `Enhancement Only` (from `.ply` files)
-- **How to Run** — Clear instructions to reproduce your results from the source code in `src/`
-- **Hardware / Environment** — Hardware used and runtime environment (GPU model, OS, etc.)
-- **Runtime** — Total processing time
+\- \*\*GPU:\*\* NVIDIA RTX 4090 (24 GB VRAM)
 
-### 4. Open a Pull Request
+\- \*\*OS / Runtime:\*\* See `environment.yml` for the full conda environment specification.
 
-Push your submission branch and open a pull request to this repository. The PR template will guide you through the required information.
 
-### Important Notes
 
-- **Include source code.** Your submission must contain the full source code needed to reproduce your results.
-- **Specify your track.** Clearly state whether you process from raw `.bag` files or from existing `.ply` files.
-- **Do not include PLY files.** Output PLY files are too large for this repository. The organizers will run your code to generate results.
-- **Do not include input data.** Do not commit the dataset files themselves.
+\## Runtime
 
-## Ranking
+Approximately \*\*\~3 min per frame\*\*.
 
-Results are ranked by **Chamfer Distance** (lower is better). All metrics are averaged across all sequences and frames.
-
-### Current Rankings
-
-| Rank | Team / Algorithm | Track | Chamfer Distance ↓ | Accuracy ↓ | Completeness ↓ | Runtime (s) |
-|------|-----------------|-------|--------------------:|-----------:|----------------:|------------:|
-| 1 | *Baseline* | Enhancement Only | — | — | — | — |
-| | | | | | | |
-
-> **Note:** The ranking table will be updated as submissions are evaluated. Arrows (↓) indicate that lower values are better.
-
-## Citation
-
-If you use this dataset, please cite the following paper:
-
-```bibtex
-@inproceedings{gautier2025uvgcwidqpc,
-  author    = {Gautier, G. and Zhou, X. and Nguyen, T. and Jansen, J. and Fr{\'e}neau, L. and Viitanen, M. and Phan, U. and K{\"a}pyl{\"a}, J. and Viola, I. and Mercat, A. and Cesar, P. and Vanne, J.},
-  title     = {{UVG-CWI-DQPC}: Dual-quality point cloud dataset for volumetric video applications},
-  booktitle = {Proc. ACM Int. Conf. Multimedia},
-  address   = {Dublin, Ireland},
-  month     = oct,
-  year      = {2025}
-}
-```
-
-## License
-
-Please read the [license agreement](https://ultravideo.fi/UVG-CWI-DQPC/UVG-CWI-DQPC_LICENSE_AGREEMENT.pdf) before using the dataset.
-
-## Contact
-
-- **Website:** [Ultra Video Group](https://ultravideo.fi/index.html)
-- **GitHub:** [github.com/ultravideo](https://github.com/ultravideo)
-- **Discord:** [UVG Discord](https://discord.gg/fZpub7BPUA)
