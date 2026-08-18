@@ -1,0 +1,7 @@
+numpy==1.23.5
+scipy==1.10.1
+plyfile==0.9
+scikit-image==0.19.3
+trimesh==3.23.5
+tqdm==4.66.1
+h5py==3.8.0
